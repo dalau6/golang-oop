@@ -2,12 +2,13 @@ package vin
 
 import "fmt"
 
-type VIN string
+type VIN interface {
+	Manufacturer() string
+}
 
-// it is debatable if this func should be named New or NewVIN
-// but NewVIN is better for greping and leaves room for other
-// NewXY funcs in the same package
-func NewVIN(code string) (VIN, error) {
+type vin string
+
+func NewVIN(code string) (vin, error) {
 
 	if len(code) != 17 {
 		return "", fmt.Errorf("invalid VIN %s: more or less than 17 characters", code)
@@ -15,15 +16,34 @@ func NewVIN(code string) (VIN, error) {
 
 	// ... check for disallowed characters ...
 
-	return VIN(code), nil
+	return vin(code), nil
 }
 
-func (v VIN) Manufacturer() string {
+func (v vin) Manufacturer() string {
 
-	manufacturer := v[:3]
+	return string(v[:3])
+}
+
+type vinEU vin
+
+func NewEUVIN(code string) (vinEU, error) {
+
+	// call super constructor
+	v, err := NewVIN(code)
+
+	// and cast to own type
+	return vinEU(v), err
+}
+
+func (v vinEU) Manufacturer() string {
+
+	// call manufacturer on supertype
+	manufacturer := vin(v).Manufacturer()
+
+	// add EU specific postfix if appropriate
 	if manufacturer[2] == '9' {
-		manufacturer += v[11:14]
+		manufacturer += string(v[11:14])
 	}
 
-	return string(manufacturer)
+	return manufacturer
 }
